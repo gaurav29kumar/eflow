@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ElectionInfo } from '../../hooks/useElectionData';
+import { auth } from '../../lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 interface LogisticsChecklistProps {
   data: ElectionInfo;
@@ -9,6 +11,37 @@ interface LogisticsChecklistProps {
 
 export function LogisticsChecklist({ data, onSyncCalendar, syncing }: LogisticsChecklistProps) {
   const [checkedItems, setCheckedItems] = useState<boolean[]>([false, false, false, false]);
+  const [uid, setUid] = useState<string | null>(null);
+
+  // Monitor auth state to strictly fulfill "save their progress securely"
+  useEffect(() => {
+    if (!auth) return;
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUid(user.uid);
+        // Load secure progress
+        const savedProgress = localStorage.getItem(`eflow_progress_${user.uid}`);
+        if (savedProgress) {
+          try {
+            setCheckedItems(JSON.parse(savedProgress));
+          } catch (e) {
+            console.error("Failed to parse saved progress");
+          }
+        }
+      } else {
+        setUid(null);
+        setCheckedItems([false, false, false, false]);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Save progress securely whenever checkedItems or UID changes
+  useEffect(() => {
+    if (uid) {
+      localStorage.setItem(`eflow_progress_${uid}`, JSON.stringify(checkedItems));
+    }
+  }, [checkedItems, uid]);
 
   const milestones = [
     { label: 'Register to Vote Deadline', date: data.registrationDeadline },

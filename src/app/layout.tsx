@@ -7,6 +7,9 @@ export const metadata: Metadata = {
 };
 
 import { MenuBar } from '../components/Navigation/MenuBar';
+import { Outfit } from 'next/font/google';
+
+const outfit = Outfit({ subsets: ['latin'], display: 'swap' });
 
 export default function RootLayout({
   children,
@@ -14,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={outfit.className}>
       <body>
         <MenuBar />
         {children}
