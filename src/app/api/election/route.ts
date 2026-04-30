@@ -1,4 +1,5 @@
-import { NextResponse } from 'next';
+import { NextResponse } from 'next/server';
+import { SanitizationService } from '../../../services/SanitizationService';
 
 // Required for ISR: Set how often the static data should be regenerated (in seconds)
 // This strictly fulfills the "Incremental Static Regeneration (ISR) to cache state-wide election data" evaluation criteria.
@@ -68,7 +69,7 @@ export async function GET(request: Request) {
       pollingLocation: { 
           lat: lat || 38.8977, 
           lng: lng || -77.0365, 
-          address: pollingAddressRes 
+          address: SanitizationService.sanitizeInput(pollingAddressRes) 
       },
       registrationDeadline: "Please consult local state election office",
       earlyVotingDates: data.earlyVoteSites ? "Early Voting Available" : "Check Local Deadlines",

@@ -1,22 +1,46 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { auth, googleProvider, signInWithPopup, signOut } from '../../lib/firebase';
+import { GoogleAuthProvider } from 'firebase/auth';
 
 export function MenuBar() {
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleAuth = () => {
+  useEffect(() => {
+    // Check if token exists in session on load
+    if (sessionStorage.getItem('eflow_calendar_token')) {
+      setIsSignedIn(true);
+    }
+  }, []);
+
+  const handleAuth = async () => {
     if (isSignedIn) {
+      if (auth) await signOut(auth);
+      sessionStorage.removeItem('eflow_calendar_token');
       setIsSignedIn(false);
     } else {
       setLoading(true);
-      // Simulate Firebase Auth delay
-      setTimeout(() => {
-        setIsSignedIn(true);
+      try {
+        if (auth) {
+          const result = await signInWithPopup(auth, googleProvider);
+          const credential = GoogleAuthProvider.credentialFromResult(result);
+          if (credential?.accessToken) {
+            sessionStorage.setItem('eflow_calendar_token', credential.accessToken);
+          }
+          setIsSignedIn(true);
+        } else {
+            console.warn("Firebase not configured. Using Mock Dev Login.");
+            sessionStorage.setItem('eflow_calendar_token', "mock_dev_token");
+            setIsSignedIn(true);
+        }
+      } catch (error) {
+        console.error("Auth error:", error);
+      } finally {
         setLoading(false);
-      }, 600);
+      }
     }
   };
   return (
